@@ -26,8 +26,15 @@ Sample usage. Login a user and list his projects
 		echo $prowork->getError();
 	}
 	
+Changelog
+=========
+
+0.8.1 (23/3/13)
+* Added me, pushSubscribe and pushUnsubscribe
+
 Public Methods
 ==============
+
 Helpers
 * getToken
 * setToken
@@ -39,6 +46,8 @@ Auth/Notification
 * register(email, password)
 * notificationCount
 * activities(read)
+* pushSubscribe
+* pushUnsubscribe
 
 Projects
 * getProjects

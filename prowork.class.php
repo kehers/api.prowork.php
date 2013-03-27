@@ -5,7 +5,7 @@
  * https://github.com/kehers/api.prowork.php
  *
  * @author Opeyemi Obembe (@kehers) <ray@prowork.me>
- * @version 0.9
+ * @version 0.9.1
  */
  
 require 'prowork.exceptions.php';
@@ -71,6 +71,17 @@ class Prowork {
 	}
 	
 	/*
+	 * Me
+	 * Get name, email and user_id of authenticated user
+	*/
+	public function me() {
+		list($status, $response) = $this->get('session/user');
+
+		$json = json_decode($response, true);
+		return $json;
+	}
+	
+	/*
 	 * Get user avatar
 	 * $email: Email of user. If not provided, current user is assumed
 	 * $size: Avatar width. Optional, defaults to 48
@@ -121,7 +132,7 @@ class Prowork {
 		$json = json_decode($response, true);
 		
 		// Login failed
-		if ($status == 403) {
+		if ($status != 200) {
 			$this->_error = $json['error'];
 			
 			return false;
@@ -182,7 +193,8 @@ class Prowork {
 
 	/*
 	 * Activities 
-	 *   This is a poll implementation. Working on a push architecture already
+	 *   This is a poll implementation.
+	 *   <s>Working on a push architecture already</s>. See pushSubscribe()
 	 * read: Return read activities. Limit 50
 	 * Doc: http://dev.prowork.me/accounts-activities
 	*/
@@ -192,6 +204,50 @@ class Prowork {
 		
 		$array = json_decode($response, true);
 		return $array;
+	}
+	
+	/*
+	 * Subscribe to push
+	 * $url: Url push notifications will be sent to
+	 * Doc: http://dev.prowork.me/push-subscribe
+	*/
+	public function pushSubscribe($url, $verifier) {
+		if (!$url || !$verifier) {
+			throw new MissingParameterException("Missing parameter.");
+		}
+		
+		list($status, $response) = $this->post('notifications/subscribe', array(
+				'url' => $url,
+				'verifier' => $verifier,
+				'token' => $this->_token,
+				'api_key' => $this->_apikey
+			));
+		
+		$json = json_decode($response, true);
+		if ($status != 200) {
+			$this->_error = $json['error'];
+			
+			return false;
+		}
+		
+		return $json['status'] ? true : false;
+	}
+	
+	/*
+	 * Unsubscribe from push
+	 * Doc: http://dev.prowork.me/push-unsubscribe
+	*/
+	public function pushUnsubscribe() {		
+		list($status, $response) = $this->get('notifications/unsubscribe?api_key='.$this->_apikey);
+		
+		$json = json_decode($response, true);
+		if ($status != 200) {
+			$this->_error = $json['error'];
+			
+			return false;
+		}
+		
+		return $json['status'] ? true : false;
 	}
 
 	/*
@@ -638,10 +694,9 @@ class Prowork {
     /**
      * HTTP request handler
 	 *
-	 * @params string url
-	 * @params array data key to value post parameters
-	 * @params boolean follow To follow redirects to new location or not
-	 * @returns string response the page content or redirection location
+	 * $url: url to post or get
+	 * $data: post data for POST
+	 * @returns array of http status and response
      */
 	private function http($url, $data = null) {
 		// print_r($data); #debug
@@ -667,7 +722,7 @@ class Prowork {
 		if ($status == 410) {	
 			$this->login($this->_email, $this->_password);
 			list($status, $response) = $this->http($url, $data);
-		}		
+		}
 		
 		//echo $response; #debug
 		return array($status, $response);
