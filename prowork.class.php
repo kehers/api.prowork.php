@@ -169,7 +169,7 @@ class Prowork {
 		$json = json_decode($response, true);
 		
 		// Registration failed
-		if ($status == 403) {
+		if ($status == 403 || $status == 401) {
 			$this->_error = $json['error'];
 			
 			return false;
